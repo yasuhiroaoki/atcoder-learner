@@ -379,7 +379,7 @@ let filteredProblems = [...BUILTIN_PROBLEMS];
 let currentProblem = null;
 let currentFilter = 'all';
 let apiKey = '';
-let supabase = null;
+let sbClient = null;
 let userId = '';
 let progressMap = {};   // problem_id → {status, code, solved_at}
 let pyodide = null;
@@ -414,7 +414,7 @@ function loadSetupAndStart(){
 async function startApp(sbUrl, sbKey, ak, uid){
   apiKey = ak;
   userId = uid;
-  supabase = window.supabase.createClient(sbUrl, sbKey);
+  sbClient = window.supabase.createClient(sbUrl, sbKey);
   document.getElementById('setupModal').style.display = 'none';
   document.getElementById('userBadge').style.display = 'flex';
   document.getElementById('userLabel').textContent = uid;
@@ -440,9 +440,9 @@ function logout(){
 
 // ══ Supabase Progress ══
 async function loadProgress(){
-  if(!supabase || !userId) return;
+  if(!sbClient || !userId) return;
   try{
-    const {data, error} = await supabase
+    const {data, error} = await sbClient
       .from('progress')
       .select('*')
       .eq('user_id', userId);
@@ -457,7 +457,7 @@ async function loadProgress(){
 }
 
 async function saveProgress(problemId, status, code){
-  if(!supabase || !userId) return;
+  if(!sbClient || !userId) return;
   try{
     const existing = progressMap[problemId];
     const payload = {
@@ -468,7 +468,7 @@ async function saveProgress(problemId, status, code){
       solved_at: new Date().toISOString(),
       attempts: (existing?.attempts || 0) + 1
     };
-    const {data, error} = await supabase
+    const {data, error} = await sbClient
       .from('progress')
       .upsert(payload, {onConflict: 'user_id,problem_id'})
       .select()
